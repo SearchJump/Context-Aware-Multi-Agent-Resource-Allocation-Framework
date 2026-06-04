@@ -1,0 +1,478 @@
+{
+  "name": "Context-Aware Multi-Agent Framework - Prototype",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "6768bf66-cfff-40d0-b221-14b2af5bf56a",
+      "name": "System Trigger 1: Ingress Morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -848,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "c734ca16-99c9-4034-9107-070009349a85",
+      "name": "System Trigger 2: Allocation Engine",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -848,
+        208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4e215ec7-7115-40ff-9894-5528b5954b62",
+      "name": "System Trigger 3: Active Event",
+      "type": "n8n-nodes-base.googleCalendarTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -848,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "d5f156a7-832f-4ed7-b289-4ea1b5595af7",
+      "name": "System Trigger 4: User Interface",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -848,
+        512
+      ],
+      "webhookId": "de3cf2ae-c874-4e49-a010-20d9fcb91bff"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "system-anomaly-signal",
+        "options": {}
+      },
+      "id": "9be6a810-ef5d-40f4-8b88-81ca80832f5d",
+      "name": "System Trigger 5: Anomaly Signal",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -848,
+        656
+      ],
+      "webhookId": "cc4d1e8e-d6aa-439a-a7a1-6533bd8ceffb"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1,
+                  "type": "string"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $node[\"System Trigger 3: Active Event\"].id ? 'event_triggered' : '' }}",
+                    "operator": "isNotEmpty",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1,
+                  "type": "string"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $node[\"System Trigger 5: Anomaly Signal\"].id ? 'anomaly_active' : '' }}",
+                    "operator": "isNotEmpty",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "877080d5-b63f-4bb6-a3ce-c745f74275b0",
+      "name": "Global Signal Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -576,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all()[0]?.json || {};\nconst anomalyDetected = input.triggerSource === 'anomaly_signal' || !!$node[\"System Trigger 5: Anomaly Signal\"]?.id;\n\nreturn [{\n  json: {\n    telemetry_payload: {\n      signal_alpha: input.signal_alpha || 62,\n      signal_beta: input.signal_beta || 74,\n      signal_gamma: anomalyDetected ? 85 : (input.signal_gamma || 30),\n      metric_weight: input.weight || 75.0,\n      metric_hydration: input.hydration || 60.0\n    },\n    anomaly_override_active: anomalyDetected,\n    direct_command: input.message?.text || \"\",\n    system_timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "d4d26155-c611-41af-97f9-2ac9b8036253",
+      "name": "Data Ingress Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are Agent_Recovery (P1). Evaluate foundational system integrity. Current Telemetry: {{ $json.telemetry_payload }}. Your output must adhere strictly to JSON standards."
+        }
+      },
+      "id": "ccc715f8-2dee-4603-b7d3-4763d1e0521a",
+      "name": "Agent_Recovery (P1)",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are Agent_Metabolic (P1). Evaluate inputs and performance capabilities. Current Telemetry: {{ $json.telemetry_payload }}."
+        }
+      },
+      "id": "096c92a1-e6fa-439d-8129-f2da2442504a",
+      "name": "Agent_Metabolic (P1)",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are Agent_Timeline (P2). Coordinate spatial-temporal allocation windows based on metrics: {{ $json.telemetry_payload }}."
+        }
+      },
+      "id": "ead40d98-a92b-4dd3-9246-0e37abb062fc",
+      "name": "Agent_Timeline (P2)",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are Agent_Creative (P2). Generate divergent options and integration paths aligned with baseline cognitive metrics."
+        }
+      },
+      "id": "0c0b9411-91ba-45b9-bf40-5629a7aafdcc",
+      "name": "Agent_Creative (P2)",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are Agent_Structural (P3). Outline load-bearing protocols and mechanical structural integrity parameters. Telemetry: {{ $json.telemetry_payload }}."
+        }
+      },
+      "id": "d3a1db88-ba22-4768-be2a-b0b2439df22c",
+      "name": "Agent_Structural (P3)",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are Agent_Social (P5/Dynamic P1). Focus on environmental co-regulation. If anomaly is active (anomaly_override_active = {{ $json.anomaly_override_active }}), prioritize soothing feedback loops."
+        }
+      },
+      "id": "f25ccfaa-a0c3-44e0-ac2c-bcff507400e5",
+      "name": "Agent_Social (P5)",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "modelProvider": "googleStudio",
+        "model": "gemini-2.5-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "ffbd3aca-76d3-4ac8-8e0f-8d4a824850e9",
+      "name": "System Strict Model (0.1)",
+      "type": "n8n-nodes-base.googleStudioModel",
+      "typeVersion": 1,
+      "position": [
+        336,
+        0
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "modelProvider": "googleStudio",
+        "model": "gemini-2.5-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "id": "68d4be76-8905-42b8-8c75-14686c768475",
+      "name": "System Balanced Model (0.5)",
+      "type": "n8n-nodes-base.googleStudioModel",
+      "typeVersion": 1,
+      "position": [
+        336,
+        352
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "modelProvider": "googleStudio",
+        "model": "gemini-2.5-flash",
+        "options": {
+          "temperature": 0.85
+        }
+      },
+      "id": "ef4799e6-1e10-443d-bc3b-a1d333739b68",
+      "name": "System Creative Model (0.85)",
+      "type": "n8n-nodes-base.googleStudioModel",
+      "typeVersion": 1,
+      "position": [
+        336,
+        704
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "id": "31c48485-2c14-4a06-a118-9efef843130f",
+      "name": "Merge Agent Outputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        624,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst anomalyActive = items[0]?.json?.anomaly_override_active || false;\n\nlet compiledAgents = [];\n\nfor (let i = 0; i < items.length; i++) {\n  let rawOutput = items[i].json.output || \"\";\n  let parsed = {};\n  try {\n    parsed = typeof rawOutput === 'string' ? JSON.parse(rawOutput.replace(/```json|```/g, '')) : rawOutput;\n  } catch (e) {\n    parsed = {\n      agent_id: \"agent_unidentified\",\n      urgency: 3,\n      action_item: rawOutput,\n      timing_window: \"standard\",\n      default_weight: 3\n    };\n  }\n  \n  let agentId = parsed.agent_id || \"specialist\";\n  let defaultWeight = parsed.default_weight || 3;\n  let urgency = parsed.urgency || 3;\n  \n  // Programmatic Anomaly Adjuster\n  if (anomalyActive) {\n    if (agentId === 'agent_social' || agentId === 'agent_regulation') {\n      defaultWeight = 1;\n      urgency = 5;\n    } else if (agentId === 'agent_structural' || agentId === 'agent_cognition') {\n      urgency = 0;\n    }\n  }\n  \n  let timingMultiplier = 1.0;\n  if (parsed.timing_window === 'immediate') timingMultiplier = 2.0;\n  else if (parsed.timing_window === 'optimal') timingMultiplier = 1.5;\n  \n  const finalScore = (6 - defaultWeight) * urgency * timingMultiplier;\n  \n  compiledAgents.push({\n    agent_id: agentId,\n    score: finalScore,\n    action: parsed.action_item,\n    reason: parsed.reasoning,\n    duration: parsed.duration_minutes || 30\n  });\n}\n\ncompiledAgents.sort((a, b) => b.score - a.score);\n\nreturn [{\n  json: {\n    anomaly_override_active: anomalyActive,\n    sorted_agenda: compiledAgents,\n    top_priority_item: compiledAgents[0] || {}\n  }\n}];"
+      },
+      "id": "9e3cf37a-686f-4237-8a3b-4b2ab2307916",
+      "name": "Dynamic Priority Scoring Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        832,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are the Unified System Orchestrator. Assess the dynamic specialist matrix generated by the scoring node: {{ $json.sorted_agenda }}. Output your unified allocation strategy as a JSON object containing 'system_message' and 'scheduled_actions' parameters."
+        }
+      },
+      "id": "7270f799-3b64-47a9-8e54-1a80eaf77729",
+      "name": "Unified System Orchestrator",
+      "type": "n8n-nodes-base.advancedAiAgent",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=<b>[System Action Matrix]</b>\n\n{{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "b0842484-1276-4a3b-b147-e00eb91777cb",
+      "name": "User Interface Dispatcher",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        272
+      ],
+      "webhookId": "f3c4e00c-1191-4677-b2d3-78f51dadfdcf"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "value": "primary",
+          "mode": "id"
+        },
+        "start": "={{ new Date().toISOString() }}",
+        "end": "={{ new Date(new Date().getTime() + 45*60000).toISOString() }}",
+        "additionalFields": {
+          "description": "={{ $json.output }}"
+        }
+      },
+      "id": "1e88e970-876a-473f-bf09-21f7d4756124",
+      "name": "System Calendar Writer",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "pinconeIndex": "system-vector-index",
+        "options": {}
+      },
+      "id": "f175741e-4ab4-4060-baac-886bb6582818",
+      "name": "System Vector Memory",
+      "type": "n8n-nodes-base.toolPinecone",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        912
+      ],
+      "credentials": {}
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "System Trigger 1: Ingress Morning": {
+      "main": [
+        [
+          {
+            "node": "Global Signal Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Trigger 2: Allocation Engine": {
+      "main": [
+        [
+          {
+            "node": "Global Signal Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Trigger 4: User Interface": {
+      "main": [
+        [
+          {
+            "node": "Global Signal Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Trigger 5: Anomaly Signal": {
+      "main": [
+        [
+          {
+            "node": "Global Signal Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Global Signal Router": {
+      "main": [
+        [
+          {
+            "node": "Data Ingress Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Agent Outputs": {
+      "main": [
+        [
+          {
+            "node": "Dynamic Priority Scoring Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "05e9e881-a696-4b3c-8e0d-90f0647367ec",
+  "meta": {
+    "instanceId": "2fc19f49515797efb01b257f8ba8fe9a7ba18323f64586b941fc251e72caab6f"
+  },
+  "nodeGroups": [],
+  "id": "5ebaYwwdCZIHv7TS",
+  "tags": []
+}
