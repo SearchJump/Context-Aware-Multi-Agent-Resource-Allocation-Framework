@@ -125,3 +125,4 @@ By default, mobile operating systems prevent non-browser applications from trans
 To prevent `404 Not Found` routing failures:
 *   Ensure the Webhook Trigger node inside n8n is configured with the **HTTP Method** parameter set to **`POST`**.
 *   Standard browser visits generate `GET` requests; mobile background sync engines utilize `POST` requests to transmit database payloads. A method mismatch will result in routing rejections.
+![FINAL VERSION](image.png)
